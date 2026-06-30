@@ -1,0 +1,881 @@
+#include <Adafruit_GFX.h>
+#include <MCUFRIEND_kbv.h>
+#include <RotaryEncoder.h>
+#include <GFButton.h>
+#include <Servo.h>
+
+MCUFRIEND_kbv tela;
+
+#define TOTAL_FUNCIONALIDADES 6
+String lista[TOTAL_FUNCIONALIDADES] = { "VOLTS", "CORRENTE", "RESISTENCIA", "DIODO", "SERVO", "CAPACITOR" };
+int pinos[4] = { 32, 34, 36, 38 };
+float valoresRes[4] = { 1.0, 100.0, 10000.0, 100000.0 };
+
+RotaryEncoder encoder(20, 21);
+GFButton botao(22);
+Servo servo;
+
+int opcao = 0;
+int posAnterior = 0;
+
+int telaAtual = 0;
+
+// 0 menu
+// 1 volts
+// 2 corrente
+// 3 resistencia
+// 4 diodo
+// 5 servo
+// 6 Capacitor
+
+float v1 = 0;
+float v2 = 0;
+float v3 = 0;
+float v4 = 0;
+float v5 = 0;
+float v6 = 0;
+
+// Variavel do servo
+int anguloServo = 90;  // começabdo no 90 la
+int xServoAntigo = 0;
+int yServoAntigo = 0;
+
+int pinoDoServo = 44; // mudar dps
+
+bool primeiraLinhaServo = true;
+
+// Variaveis globais para as faixas do resistor
+// Fiz assim para nao usar ponteiro
+int faixa1 = 0;
+int faixa2 = 0;
+int faixa3 = 0;
+
+// Cores extras para o desenho do resistor
+#define COR_MARROM 0xA145
+#define COR_LARANJA 0xFD20
+#define COR_ROXO 0x8010
+#define COR_CINZA 0x8410
+#define COR_OURO 0xFEA0
+#define COR_BEGE 0xF7BB
+
+unsigned long tempoAnterior = 0;
+
+
+void atualizaEnc() {
+  encoder.tick();
+}
+
+void setup() {
+
+  Serial.begin(9600);
+  servo.attach(pinoDoServo);
+  tela.begin(tela.readID());
+  tela.fillScreen(TFT_BLACK);
+
+
+  pinMode(20, INPUT);
+  pinMode(21, INPUT);
+
+  attachInterrupt(digitalPinToInterrupt(20), atualizaEnc, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(21), atualizaEnc, CHANGE);
+
+  botao.setPressHandler(cliqueBotao);
+
+  desenhaMenu();
+}
+
+void loop() {
+
+  mexeEncoder();
+  botao.process();
+  lerSerial();
+
+  if (telaAtual != 0) {   // se n tiver no menu
+
+    if (millis() - tempoAnterior >= 1000) {
+      tempoAnterior = millis();
+
+      if (telaAtual == 1) {
+        telaVolts();
+      }
+
+      if (telaAtual == 2) {
+        telaCorrente();
+      }
+
+      if (telaAtual == 3) {
+        medirResistor();
+      }
+
+      if (telaAtual == 4) {
+        medirDiodo();
+      }
+
+      if (telaAtual == 5) {
+        atualizaServo();
+      }
+
+      if (telaAtual == 6) {
+        medirCapacitor();
+      }
+    }
+  }
+}
+
+// ---------------- BOTAO ----------------
+
+void cliqueBotao() {
+
+  if (telaAtual == 0) {
+    abreTela();
+  } else {
+    telaAtual = 0;
+    desenhaMenu();
+  }
+}
+
+// ---------------- ENCODER ----------------
+
+void mexeEncoder() {
+
+  int pos = encoder.getPosition();
+
+  if (pos == posAnterior) {
+    return;
+  }
+
+  int sentido = 0;
+
+  if (pos > posAnterior) {
+    sentido = 1;
+  }
+
+  if (pos < posAnterior) {
+    sentido = -1;
+  }
+
+  posAnterior = pos;
+  
+
+// Encoder no menu
+  if (telaAtual == 0) {
+
+    opcao = opcao + sentido;
+
+    if (opcao > TOTAL_FUNCIONALIDADES - 1) {
+      opcao = 0;
+    }
+
+    if (opcao < 0) {
+      opcao = TOTAL_FUNCIONALIDADES - 1;
+    }
+
+    desenhaCaixas();
+  }
+
+  if (telaAtual == 1) {
+  }
+  if (telaAtual == 2) {
+  }
+  if (telaAtual == 3) {
+    telaResistencia();
+  }
+  if (telaAtual == 4) {
+  }
+  if (telaAtual == 5) {
+
+    anguloServo = anguloServo + sentido * 5;
+
+    if (anguloServo > 180) {
+      anguloServo = 180;
+    }
+
+    if (anguloServo < 0) {
+      anguloServo = 0;
+    }
+    servo.write(anguloServo);
+    v5 = anguloServo;
+
+    atualizaServo();
+}
+  if (telaAtual == 6) {
+  }
+}
+
+// ---------------- SERIAL ----------------
+
+void lerSerial() {
+
+  if (Serial.available() > 0) {
+
+    String s = Serial.readStringUntil('\n');
+    float valor = s.toFloat();
+
+    if (telaAtual == 1) {
+      v1 = valor;
+      telaVolts();
+    }
+
+    if (telaAtual == 2) {
+      v2 = valor;
+      telaCorrente();
+    }
+
+    if (telaAtual == 3) {
+      v3 = valor;
+      telaResistencia();
+    }
+
+    if (telaAtual == 4) {
+      v4 = valor;
+      telaDiodo();
+    }
+
+    if (telaAtual == 5) {
+      v5 = valor;
+      telaServo();
+    }
+  }
+}
+
+// ---------------- MENU ----------------
+
+void desenhaMenu() {
+
+  tela.fillScreen(TFT_BLACK);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(1);
+
+  tela.setCursor(35, 25);
+  tela.print("ESCOLHA A MEDICAO");
+
+  for (int i = 0; i < TOTAL_FUNCIONALIDADES; i++) {
+    tela.setCursor(35, 85 + 40 * i);
+    tela.print(lista[i]);
+  }
+
+  desenhaCaixas();
+}
+
+// ---------------- CAIXAS ----------------
+
+void desenhaCaixa(int n, int x, int y) {
+
+  tela.drawRect(x, y, 22, 22, TFT_WHITE);
+  tela.fillRect(x + 4, y + 4, 14, 14, TFT_BLACK);
+
+  if (opcao == n) {
+    tela.fillRect(x + 4, y + 4, 14, 14, TFT_GREEN);
+  }
+}
+
+void desenhaCaixas() {
+  for (int n = 0; n < TOTAL_FUNCIONALIDADES; n++) {
+    desenhaCaixa(n, 150, 83 + n * 40);
+  }
+}
+
+// ---------------- ABRE TELAS ----------------
+
+void abreTela() {
+
+  if (opcao == 0) {
+    telaAtual = 1;
+    telaVolts();
+  }
+
+  if (opcao == 1) {
+    telaAtual = 2;
+    telaCorrente();
+  }
+
+  if (opcao == 2) {
+    telaAtual = 3;
+    telaResistencia();
+  }
+
+  if (opcao == 3) {
+    telaAtual = 4;
+    telaDiodo();
+  }
+
+  if (opcao == 4) {
+    telaAtual = 5;
+    telaServo();
+  }
+
+  if (opcao == 5) {
+    telaAtual = 6;
+    telaCapacitor();
+  }
+}
+
+// ---------------- TELA VOLTS ----------------
+
+void telaVolts() {
+
+  tela.fillScreen(TFT_BLACK);
+
+  tela.setTextColor(TFT_GREEN);
+  tela.setTextSize(2);
+  tela.setCursor(45, 25);
+  tela.print("VOLTS (V)");
+
+  desenhaImagemVolts();
+
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.setCursor(70, 230);
+  tela.print(v1);
+  tela.print(" V");
+}
+
+
+void desenhaImagemVolts() {
+
+  // simbolos de positivo e negativo
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+
+  tela.setCursor(55, 65);
+  tela.print("(-)");
+
+  tela.setCursor(155, 65);
+  tela.print("(+)");
+
+  // desenho parecido com uma fonte
+
+  tela.drawLine(45, 130, 95, 130, TFT_WHITE);
+  // botando o negativo menor, que nem na fisica é representado...
+  tela.drawLine(95, 115, 95, 145, TFT_WHITE);
+
+  tela.drawLine(145, 130, 195, 130, TFT_WHITE);
+  tela.drawLine(145, 95, 145, 165, TFT_WHITE);
+}
+
+// ---------------- TELA CORRENTE ----------------
+
+void telaCorrente() {
+
+  tela.fillScreen(TFT_BLACK);
+  tela.setTextColor(TFT_GREEN);
+  tela.setTextSize(2);
+
+  tela.setCursor(35, 50);
+  tela.print("CORRENTE (A)");
+
+  desenhaImagemCorrente();
+
+  tela.setTextColor(TFT_WHITE);
+  tela.setCursor(70, 230);
+  tela.print(v2);
+  tela.print(" A");
+}
+
+void desenhaImagemCorrente() {
+
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+
+  tela.drawLine(45, 110, 180, 110, TFT_WHITE);
+  tela.drawLine(120, 125, 140, 145, TFT_WHITE);  // traço para cima
+  tela.drawLine(80, 145, 140, 145, TFT_WHITE);   // traço principal
+  tela.setCursor(155, 140);
+  tela.print("(I)");
+  tela.drawLine(120, 165, 140, 145, TFT_WHITE);  // traço para baixo
+  tela.drawLine(45, 180, 180, 180, TFT_WHITE);
+}
+
+// ---------------- TELA RESISTENCIA ----------------
+
+void telaResistencia() {
+
+  tela.fillScreen(TFT_BLACK);
+
+  tela.setTextColor(TFT_GREEN);
+  tela.setTextSize(2);
+  tela.setCursor(30, 25);
+  tela.print("RESISTENCIA");
+
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.setCursor(35, 190);
+  tela.print(v3, 0);
+  tela.print(" Ohms");
+
+  desenhaResistor(v3);
+}
+
+void medirResistor() {
+
+  for (int i = 0; i < 4; i++) {
+
+    pinMode(pinos[i], OUTPUT);
+    digitalWrite(pinos[i], HIGH);
+    delay(5);
+
+    int leitura = analogRead(A10);
+
+    pinMode(pinos[i], INPUT);
+
+    if (leitura >= 200 && leitura <= 800) {
+
+      float Resis = valoresRes[i] * leitura / (1023.0 - leitura);
+
+      v3 = Resis;
+
+      Serial.print("R1= ");
+      Serial.print(valoresRes[i]);
+      Serial.print(" ohm  leitura= ");
+      Serial.print(leitura);
+      Serial.print("  Resis= ");
+      Serial.print(Resis);
+      Serial.println(" ohm");
+
+      telaResistencia();
+
+      break;
+    }
+  }
+}
+
+void desenhaResistor(float valor) {
+
+  if (valor <= 0) {
+    tela.setTextColor(TFT_WHITE);
+    tela.setTextSize(1);
+    tela.setCursor(25, 105);
+    tela.print("Digite um valor na Serial");
+    return;
+  }
+
+  calculaFaixas(valor);
+
+  uint16_t cor1 = corDoNumero(faixa1);
+  uint16_t cor2 = corDoNumero(faixa2);
+  uint16_t cor3 = corDoNumero(faixa3);
+  uint16_t cor4 = COR_OURO;
+
+  int y = 115;
+
+
+  tela.drawLine(15, 115, 55, 115, TFT_WHITE);
+  tela.drawLine(185, 115, 225, 115, TFT_WHITE);
+
+  // Corpo do resistor
+  tela.fillRoundRect(55, 85, 130, 60, 15, COR_BEGE);
+  tela.drawRoundRect(55, 85, 130, 60, 15, TFT_WHITE);
+
+  // Faixas coloridas
+  tela.fillRect(80, 88, 10, 54, cor1);
+  tela.fillRect(105, 88, 10, 54, cor2);
+  tela.fillRect(130, 88, 10, 54, cor3);
+
+  // Faixa de tolerancia fixa em ouro
+  tela.fillRect(160, 88, 10, 54, cor4);
+
+  // Mostra os numeros das faixas embaixo
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(1);
+
+  tela.setCursor(75, 155);
+  tela.print(faixa1);
+
+  tela.setCursor(100, 155);
+  tela.print(faixa2);
+
+  tela.setCursor(123, 155);
+  tela.print("x10^");
+  tela.print(faixa3);
+}
+
+// ---------------- CALCULO DAS FAIXAS ----------------
+
+void calculaFaixas(float valor) {
+
+  long resistencia = valor + 0.5;
+
+  int multiplicador = 0;
+
+  // Exemplo:
+  // 4700 vira 47 x 10^2
+  while (resistencia >= 100) {
+    resistencia = resistencia / 10;
+    multiplicador++;
+  }
+
+  faixa1 = resistencia / 10;
+  faixa2 = resistencia % 10;
+  faixa3 = multiplicador;
+
+  // Travas simples para evitar numero fora da tabela de cores
+  if (faixa1 < 0) faixa1 = 0;
+  if (faixa1 > 9) faixa1 = 9;
+
+  if (faixa2 < 0) faixa2 = 0;
+  if (faixa2 > 9) faixa2 = 9;
+
+  if (faixa3 < 0) faixa3 = 0;
+  if (faixa3 > 9) faixa3 = 9;
+}
+
+// ---------------- CORES DO RESISTOR ----------------
+
+uint16_t corDoNumero(int n) {
+
+  if (n == 0) return TFT_BLACK;
+  if (n == 1) return COR_MARROM;
+  if (n == 2) return TFT_RED;
+  if (n == 3) return COR_LARANJA;
+  if (n == 4) return TFT_YELLOW;
+  if (n == 5) return TFT_GREEN;
+  if (n == 6) return TFT_BLUE;
+  if (n == 7) return COR_ROXO;
+  if (n == 8) return COR_CINZA;
+  if (n == 9) return TFT_WHITE;
+
+  return TFT_BLACK;
+}
+
+// ---------------- TELA DIODO ----------------
+
+void telaDiodo() {
+
+  tela.fillScreen(TFT_BLACK);
+
+  tela.setTextColor(TFT_GREEN);
+  tela.setTextSize(2);
+  tela.setCursor(35, 50);
+  tela.print("DIODO");
+
+
+  tela.setTextColor(TFT_WHITE);
+  tela.setCursor(35, 100);
+  tela.print(v4);
+}
+
+void medirDiodo() {
+
+  for (int i = 0; i < 4; i++) {
+    pinMode(pinos[i], INPUT);
+  }
+
+  for (int i = 1; i < 4; i++) {
+
+    pinMode(pinos[i], OUTPUT);
+    digitalWrite(pinos[i], HIGH);
+    delay(5);
+
+    int leitura = analogRead(A10);
+
+    pinMode(pinos[i], INPUT);
+
+    float tensaoDiodo = (leitura / 1023.0) * 5.0;
+
+    if (leitura >= 200 && leitura <= 800) {
+
+      v4 = tensaoDiodo;
+
+      Serial.print("Resistor base: ");
+      Serial.print(valoresRes[i]);
+      Serial.print(" ohm | leitura ADC: ");
+      Serial.print(leitura);
+      Serial.print(" | Vdiodo: ");
+      Serial.println(tensaoDiodo);
+
+      telaDiodo();
+
+      break;
+    }
+  }
+}
+
+
+
+
+
+
+void telaServo() {
+
+  tela.fillScreen(TFT_BLACK);
+
+  tela.setTextColor(TFT_GREEN);
+  tela.setTextSize(2);
+  tela.setCursor(70, 30);
+  tela.print("SERVO");
+
+  primeiraLinhaServo = true;
+  atualizaServo();
+}
+
+void atualizaServo() {
+
+  int x0 = 110;
+  int y0 = 125;  // traço acima do retangulo pq era um saco pintar aquilo
+  int c = 70;
+
+  float t = radians(anguloServo);
+
+  int xNovo = x0 + cos(t) * c;
+  int yNovo = y0 - sin(t) * c;
+
+  if (primeiraLinhaServo == false) {
+    tela.drawLine(x0, y0, xServoAntigo, yServoAntigo, TFT_BLACK);
+  }
+
+  tela.drawRect(60, 130, 100, 90, TFT_WHITE);
+  tela.fillRect(60, 130, 100, 90, TFT_BLUE);
+  tela.drawLine(x0, y0, xNovo, yNovo, TFT_WHITE);
+
+  xServoAntigo = xNovo;
+  yServoAntigo = yNovo;
+
+  primeiraLinhaServo = false;
+
+  tela.fillRect(30, 230, 190, 30, TFT_BLACK);
+
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.setCursor(35, 235);
+  tela.print("Angulo: ");
+  tela.print(anguloServo);
+}
+
+
+
+
+
+void telaCapacitor() {
+
+  tela.fillScreen(TFT_BLACK);
+
+  tela.setTextColor(TFT_GREEN);
+  tela.setTextSize(2);
+  tela.setCursor(45, 25);
+  tela.print("CAPACITOR");
+
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.setCursor(55, 230);
+  tela.print(v6);
+  tela.print(" uF");
+
+}
+
+void medirCapacitor() {
+
+  for (int i = 0; i < 4; i++) {
+    pinMode(pinos[i], INPUT);
+  }
+
+  for (int i = 1; i < 4; i++) {
+
+    // descarrega o capacitor pelo A10
+    pinMode(A10, OUTPUT);
+    digitalWrite(A10, LOW);
+    delay(300);
+
+    // verifica se o botao foi apertado durante o delay
+    botao.process();
+
+    if (telaAtual != 6) {
+      return;
+    }
+
+    // volta o A10 para leitura
+    pinMode(A10, INPUT);
+
+    // carrega o capacitor usando um dos resistores
+    pinMode(pinos[i], OUTPUT);
+    digitalWrite(pinos[i], HIGH);
+
+    unsigned long tempoInicio = millis();
+
+    // espera o capacitor carregar
+    while (analogRead(A10) < 648) {
+
+      botao.process();
+
+      if (telaAtual != 6) {
+        digitalWrite(pinos[i], LOW);
+        pinMode(pinos[i], INPUT);
+        return;
+      }
+
+      if ((millis() - tempoInicio) > 3000) {
+        break;
+      }
+    }
+
+    unsigned long tempoDecorrido = millis() - tempoInicio;
+
+    digitalWrite(pinos[i], LOW);
+    pinMode(pinos[i], INPUT);
+
+    if (tempoDecorrido >= 5 && tempoDecorrido < 3000) {
+
+      
+
+      float microFarads = (((float)tempoDecorrido * 1000.0) / valoresRes[i]);
+      float nanoFarads = microFarads * 1000.0;
+
+      v6 = microFarads;
+
+      Serial.print("Escala usada: ");
+      Serial.print(valoresRes[i]);
+      Serial.println(" ohms");
+
+      Serial.print("Tempo de carga: ");
+      Serial.print(tempoDecorrido);
+      Serial.println(" ms");
+
+      Serial.print("Capacitancia: ");
+
+      if (microFarads >= 1.0) {
+        Serial.print(microFarads);
+        Serial.println(" uF");
+      } else {
+        Serial.print(nanoFarads);
+        Serial.println(" nF");
+      }
+
+      telaCapacitor();
+
+      break;
+    }
+
+    else if (i == 3) {
+      Serial.println("Erro: Capacitor fora da escala recomendada ou falha no circuito.");
+      delay(2000);
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+int pinos[4] = { 13, 12, 11, 10 };
+float valoresRes[4] = { 1.0, 100.0, 10000.0, 100000.0 };
+
+void setup() {
+
+  for (int i = 0; i < 4; i++) {
+    pinMode(pinos[i], INPUT);
+  }
+}
+
+void loop() {
+
+
+
+// Código para o Resistor
+void medirResistor() {
+  for (int i = 0; i < 4; i++) {
+    pinMode(pinos[i], OUTPUT);
+    digitalWrite(pinos[i], HIGH);
+    delay(5);
+
+    int leitura = analogRead(A0);
+    pinMode(pinos[i], INPUT);
+
+    if (leitura >= 200 && leitura <= 800) {
+      float Rx = valoresRes[i] * leitura / (1023.0 - leitura);
+      Serial.print("R1= ");
+      Serial.print(valoresRes[i]);
+      Serial.print(" ohm  leitura=");
+      Serial.print(leitura);
+      Serial.print("  Rx= ");
+      Serial.print(Rx);
+      Serial.println(" ohm");
+      break;
+    }
+  }
+  delay(1000);
+}
+
+// Código para o Diodo
+void medirDiodo() {
+  for (int i = 1; i < 4; i++) {
+    pinMode(pinos[i], OUTPUT);
+    digitalWrite(pinos[i], HIGH);
+    delay(5);
+
+    int leitura = analogRead(A0);
+    pinMode(pinos[i], INPUT);
+
+    float tensaoDiodo = (leitura / 1023.0) * 5.0;
+
+    if (leitura >= 200 && leitura <= 800) {
+      Serial.print("Resistor base:  ");
+      Serial.print(valoresRes[i]);
+      Serial.print(" ohm | leitura ADC:");
+      Serial.print(leitura);
+      Serial.print("|  Vdiodo: ");
+      Serial.println(tensaoDiodo);
+      break;
+    }
+  }
+  delay(1000);
+}
+
+// Código para o Capacitor
+void medirCapacitor() {
+  for (int i = 1; i < 4; i++) {
+    pinMode(A0, OUTPUT);
+    digitalWrite(A0, LOW);
+    delay(300);
+    pinMode(A0, INPUT);
+
+    pinMode(pinos[i], OUTPUT);
+    digitalWrite(pinos[i], HIGH);
+    unsigned long tempoInicio = millis();
+
+    while (analogRead(A0) < 648) {
+      if ((millis() - tempoInicio) > 3000) {
+        break;
+      }
+    }
+
+    unsigned long tempoDecorrido = millis() - tempoInicio;
+    digitalWrite(pinos[i], LOW);
+    pinMode(pinos[i], INPUT);
+
+    if (tempoDecorrido >= 5 && tempoDecorrido < 3000) {
+      float microFarads = ((float)tempoDecorrido * 1000.0) / valoresRes[i];
+      float nanoFarads = microFarads * 1000.0;
+
+      Serial.print("Escala usada: ");
+      Serial.print(valoresRes[i]);
+      Serial.println(" ohmns");
+      Serial.print("Tempo de carga: ");
+      Serial.print(tempoDecorrido);
+      Serial.println(" ms");
+
+      Serial.print("Capacitancia: ");
+      if (microFarads > 1.0) {
+        Serial.print(microFarads);
+        Serial.println(" uF");
+      } else {
+        Serial.print(nanoFarads);
+        Serial.println(" nF");
+      }
+      break;
+    } else if (i == 3) {
+      Serial.println("Erro: Capacitor fora da escala recomendada ou falha no circuito.");
+      delay(3000);
+    }
+  }
+}
+*/
