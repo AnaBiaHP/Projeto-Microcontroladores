@@ -39,7 +39,7 @@ float v6 = 0;
 int anguloServo = 90;  // começabdo no 90 la
 int xServoAntigo = 0;
 int yServoAntigo = 0;
-
+const int pinoAnalogo = A8;
 int pinoDoServo = 44; // mudar dps
 
 bool primeiraLinhaServo = true;
@@ -88,7 +88,6 @@ void loop() {
 
   mexeEncoder();
   botao.process();
-  lerSerial();
 
   if (telaAtual != 0) {   // se n tiver no menu
 
@@ -97,26 +96,33 @@ void loop() {
 
       if (telaAtual == 1) {
         telaVolts();
+        Serial.println(v1);
       }
 
       if (telaAtual == 2) {
-        telaCorrente();
+        medirCorrente();
+        Serial.println(v2);
       }
 
       if (telaAtual == 3) {
         medirResistor();
+        Serial.println(v3);
       }
 
       if (telaAtual == 4) {
         medirDiodo();
+        Serial.println(v4);
       }
 
       if (telaAtual == 5) {
         atualizaServo();
+        Serial.println(v5);
       }
 
       if (telaAtual == 6) {
         medirCapacitor();
+        Serial.println(v6);
+        
       }
     }
   }
@@ -128,6 +134,7 @@ void cliqueBotao() {
 
   if (telaAtual == 0) {
     abreTela();
+    
   } else {
     telaAtual = 0;
     desenhaMenu();
@@ -282,21 +289,25 @@ void abreTela() {
   if (opcao == 0) {
     telaAtual = 1;
     telaVolts();
+    Serial.println("Comando V x t")
   }
 
   if (opcao == 1) {
     telaAtual = 2;
     telaCorrente();
+    Serial.println("Comando I x t")
   }
 
   if (opcao == 2) {
     telaAtual = 3;
     telaResistencia();
+    Serial.println("Comando R x t")
   }
 
   if (opcao == 3) {
     telaAtual = 4;
     telaDiodo();
+    Serial.println("Comando D x t")
   }
 
   if (opcao == 4) {
@@ -307,6 +318,7 @@ void abreTela() {
   if (opcao == 5) {
     telaAtual = 6;
     telaCapacitor();
+    Serial.println("Comando C x t")
   }
 }
 
@@ -362,14 +374,24 @@ void telaCorrente() {
   tela.setTextSize(2);
 
   tela.setCursor(35, 50);
-  tela.print("CORRENTE (A)");
+  tela.print("CORRENTE (mA)");
 
   desenhaImagemCorrente();
 
   tela.setTextColor(TFT_WHITE);
   tela.setCursor(70, 230);
   tela.print(v2);
-  tela.print(" A");
+  tela.print(" mA");
+}
+
+void medirCorrente(){
+  int valorAnalogico = analogRead(pinoAnalogo);
+  double valorMap = map(valorAnalogico, 0, 1023, 0, 500);
+  double valorFinal=valorMap/100.0;
+  double correnteA=valorFinal/resistorShunt;
+  double correntemA=correnteA*1000.0;
+  v2=correntemA;
+  telaCorrente();
 }
 
 void desenhaImagemCorrente() {
@@ -590,11 +612,6 @@ void medirDiodo() {
   }
 }
 
-
-
-
-
-
 void telaServo() {
 
   tela.fillScreen(TFT_BLACK);
@@ -640,10 +657,6 @@ void atualizaServo() {
   tela.print("Angulo: ");
   tela.print(anguloServo);
 }
-
-
-
-
 
 void telaCapacitor() {
 
