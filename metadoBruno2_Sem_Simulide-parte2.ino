@@ -8,10 +8,10 @@ MCUFRIEND_kbv tela;
 
 #define TOTAL_FUNCIONALIDADES 6
 String lista[TOTAL_FUNCIONALIDADES] = { "VOLTS", "CORRENTE", "RESISTENCIA", "DIODO", "SERVO", "CAPACITOR" };
-int pinos[4] = { 32, 34, 36, 38 };
+int pinos[4] = {51, 49, 47, 45}; // resitor/capacitor
 float valoresRes[4] = { 1.0, 100.0, 10000.0, 100000.0 };
 
-RotaryEncoder encoder(20, 21);
+RotaryEncoder encoder(18, 19);
 GFButton botao(22);
 Servo servo;
 
@@ -39,7 +39,7 @@ float v6 = 0;
 int anguloServo = 90;  // começabdo no 90 la
 int xServoAntigo = 0;
 int yServoAntigo = 0;
-const int pinoAnalogo = A8;
+const int pinoAnalogo = A10;
 int pinoDoServo = 44; // mudar dps
 
 bool primeiraLinhaServo = true;
