@@ -8,7 +8,8 @@ MCUFRIEND_kbv tela;
 
 #define TOTAL_FUNCIONALIDADES 6
 String lista[TOTAL_FUNCIONALIDADES] = { "VOLTS", "CORRENTE", "RESISTENCIA", "DIODO", "SERVO", "CAPACITOR" };
-int pinos[4] = {51, 49, 47, 45}; // resitor/capacitor
+int pinosCAPRES[4] = {51, 49, 47, 45}; // resitor/capacitor
+int pinosDI[4] = {39, 37, 35, 33};// DIODO
 float valoresRes[4] = { 1.0, 100.0, 10000.0, 100000.0 };
 
 RotaryEncoder encoder(18, 19);
@@ -73,11 +74,11 @@ void setup() {
   tela.fillScreen(TFT_BLACK);
 
 
-  pinMode(20, INPUT);
-  pinMode(21, INPUT);
+  pinMode(18, INPUT);
+  pinMode(19, INPUT);
 
-  attachInterrupt(digitalPinToInterrupt(20), atualizaEnc, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(21), atualizaEnc, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(18), atualizaEnc, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(19), atualizaEnc, CHANGE);
 
   botao.setPressHandler(cliqueBotao);
 
@@ -289,25 +290,25 @@ void abreTela() {
   if (opcao == 0) {
     telaAtual = 1;
     telaVolts();
-    Serial.println("Comando V x t")
+    Serial.println("Comando V x t");
   }
 
   if (opcao == 1) {
     telaAtual = 2;
     telaCorrente();
-    Serial.println("Comando I x t")
+    Serial.println("Comando I x t");
   }
 
   if (opcao == 2) {
     telaAtual = 3;
     telaResistencia();
-    Serial.println("Comando R x t")
+    Serial.println("Comando R x t");
   }
 
   if (opcao == 3) {
     telaAtual = 4;
     telaDiodo();
-    Serial.println("Comando D x t")
+    Serial.println("Comando D x t");
   }
 
   if (opcao == 4) {
@@ -318,7 +319,7 @@ void abreTela() {
   if (opcao == 5) {
     telaAtual = 6;
     telaCapacitor();
-    Serial.println("Comando C x t")
+    Serial.println("Comando C x t");
   }
 }
 
@@ -388,9 +389,9 @@ void medirCorrente(){
   int valorAnalogico = analogRead(pinoAnalogo);
   double valorMap = map(valorAnalogico, 0, 1023, 0, 500);
   double valorFinal=valorMap/100.0;
-  double correnteA=valorFinal/resistorShunt;
-  double correntemA=correnteA*1000.0;
-  v2=correntemA;
+//  double correnteA=valorFinal/resistorShunt;
+//  double correntemA=correnteA*1000.0;
+  //v2=correntemA;
   telaCorrente();
 }
 
@@ -432,13 +433,13 @@ void medirResistor() {
 
   for (int i = 0; i < 4; i++) {
 
-    pinMode(pinos[i], OUTPUT);
-    digitalWrite(pinos[i], HIGH);
+    pinMode(pinosCAPRES[i], OUTPUT);
+    digitalWrite(pinosCAPRES[i], HIGH);
     delay(5);
 
-    int leitura = analogRead(A10);
+    int leitura = analogRead(A8);
 
-    pinMode(pinos[i], INPUT);
+    pinMode(pinosCAPRES[i], INPUT);
 
     if (leitura >= 200 && leitura <= 800) {
 
@@ -579,18 +580,18 @@ void telaDiodo() {
 void medirDiodo() {
 
   for (int i = 0; i < 4; i++) {
-    pinMode(pinos[i], INPUT);
+    pinMode(pinosDI[i], INPUT);
   }
 
   for (int i = 1; i < 4; i++) {
 
-    pinMode(pinos[i], OUTPUT);
-    digitalWrite(pinos[i], HIGH);
+    pinMode(pinosDI[i], OUTPUT);
+    digitalWrite(pinosDI[i], HIGH);
     delay(5);
 
-    int leitura = analogRead(A10);
+    int leitura = analogRead(A9);
 
-    pinMode(pinos[i], INPUT);
+    pinMode(pinosDI[i], INPUT);
 
     float tensaoDiodo = (leitura / 1023.0) * 5.0;
 
@@ -678,14 +679,14 @@ void telaCapacitor() {
 void medirCapacitor() {
 
   for (int i = 0; i < 4; i++) {
-    pinMode(pinos[i], INPUT);
+    pinMode(pinosCAPRES[i], INPUT);
   }
 
   for (int i = 1; i < 4; i++) {
 
     // descarrega o capacitor pelo A10
-    pinMode(A10, OUTPUT);
-    digitalWrite(A10, LOW);
+    pinMode(A8, OUTPUT);
+    digitalWrite(A8, LOW);
     delay(300);
 
     // verifica se o botao foi apertado durante o delay
@@ -695,23 +696,23 @@ void medirCapacitor() {
       return;
     }
 
-    // volta o A10 para leitura
-    pinMode(A10, INPUT);
+    // volta o A8 para leitura
+    pinMode(A8, INPUT);
 
     // carrega o capacitor usando um dos resistores
-    pinMode(pinos[i], OUTPUT);
-    digitalWrite(pinos[i], HIGH);
+    pinMode(pinosCAPRES[i], OUTPUT);
+    digitalWrite(pinosCAPRES[i], HIGH);
 
     unsigned long tempoInicio = millis();
 
     // espera o capacitor carregar
-    while (analogRead(A10) < 648) {
+    while (analogRead(A8) < 648) {
 
       botao.process();
 
       if (telaAtual != 6) {
-        digitalWrite(pinos[i], LOW);
-        pinMode(pinos[i], INPUT);
+        digitalWrite(pinosCAPRES[i], LOW);
+        pinMode(pinosCAPRES[i], INPUT);
         return;
       }
 
@@ -722,14 +723,14 @@ void medirCapacitor() {
 
     unsigned long tempoDecorrido = millis() - tempoInicio;
 
-    digitalWrite(pinos[i], LOW);
-    pinMode(pinos[i], INPUT);
+    digitalWrite(pinosCAPRES[i], LOW);
+    pinMode(pinosCAPRES[i], INPUT);
 
-    if (tempoDecorrido >= 5 && tempoDecorrido < 3000) {
+    if (tempoDecorrido >= 5 && tempoDecorrido < 1000) {
 
       
 
-      float microFarads = (((float)tempoDecorrido * 1000.0) / valoresRes[i]);
+      float microFarads = (((float)tempoDecorrido) / valoresRes[i]);
       float nanoFarads = microFarads * 1000.0;
 
       v6 = microFarads;
@@ -763,132 +764,3 @@ void medirCapacitor() {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-int pinos[4] = { 13, 12, 11, 10 };
-float valoresRes[4] = { 1.0, 100.0, 10000.0, 100000.0 };
-
-void setup() {
-
-  for (int i = 0; i < 4; i++) {
-    pinMode(pinos[i], INPUT);
-  }
-}
-
-void loop() {
-
-
-
-// Código para o Resistor
-void medirResistor() {
-  for (int i = 0; i < 4; i++) {
-    pinMode(pinos[i], OUTPUT);
-    digitalWrite(pinos[i], HIGH);
-    delay(5);
-
-    int leitura = analogRead(A0);
-    pinMode(pinos[i], INPUT);
-
-    if (leitura >= 200 && leitura <= 800) {
-      float Rx = valoresRes[i] * leitura / (1023.0 - leitura);
-      Serial.print("R1= ");
-      Serial.print(valoresRes[i]);
-      Serial.print(" ohm  leitura=");
-      Serial.print(leitura);
-      Serial.print("  Rx= ");
-      Serial.print(Rx);
-      Serial.println(" ohm");
-      break;
-    }
-  }
-  delay(1000);
-}
-
-// Código para o Diodo
-void medirDiodo() {
-  for (int i = 1; i < 4; i++) {
-    pinMode(pinos[i], OUTPUT);
-    digitalWrite(pinos[i], HIGH);
-    delay(5);
-
-    int leitura = analogRead(A0);
-    pinMode(pinos[i], INPUT);
-
-    float tensaoDiodo = (leitura / 1023.0) * 5.0;
-
-    if (leitura >= 200 && leitura <= 800) {
-      Serial.print("Resistor base:  ");
-      Serial.print(valoresRes[i]);
-      Serial.print(" ohm | leitura ADC:");
-      Serial.print(leitura);
-      Serial.print("|  Vdiodo: ");
-      Serial.println(tensaoDiodo);
-      break;
-    }
-  }
-  delay(1000);
-}
-
-// Código para o Capacitor
-void medirCapacitor() {
-  for (int i = 1; i < 4; i++) {
-    pinMode(A0, OUTPUT);
-    digitalWrite(A0, LOW);
-    delay(300);
-    pinMode(A0, INPUT);
-
-    pinMode(pinos[i], OUTPUT);
-    digitalWrite(pinos[i], HIGH);
-    unsigned long tempoInicio = millis();
-
-    while (analogRead(A0) < 648) {
-      if ((millis() - tempoInicio) > 3000) {
-        break;
-      }
-    }
-
-    unsigned long tempoDecorrido = millis() - tempoInicio;
-    digitalWrite(pinos[i], LOW);
-    pinMode(pinos[i], INPUT);
-
-    if (tempoDecorrido >= 5 && tempoDecorrido < 3000) {
-      float microFarads = ((float)tempoDecorrido * 1000.0) / valoresRes[i];
-      float nanoFarads = microFarads * 1000.0;
-
-      Serial.print("Escala usada: ");
-      Serial.print(valoresRes[i]);
-      Serial.println(" ohmns");
-      Serial.print("Tempo de carga: ");
-      Serial.print(tempoDecorrido);
-      Serial.println(" ms");
-
-      Serial.print("Capacitancia: ");
-      if (microFarads > 1.0) {
-        Serial.print(microFarads);
-        Serial.println(" uF");
-      } else {
-        Serial.print(nanoFarads);
-        Serial.println(" nF");
-      }
-      break;
-    } else if (i == 3) {
-      Serial.println("Erro: Capacitor fora da escala recomendada ou falha no circuito.");
-      delay(3000);
-    }
-  }
-}
-*/
