@@ -86,7 +86,6 @@ void setup() {
 }
 
 void loop() {
-
   mexeEncoder();
   botao.process();
 
@@ -629,7 +628,7 @@ void telaServo() {
 void atualizaServo() {
 
   int x0 = 110;
-  int y0 = 125;  // traço acima do retangulo pq era um saco pintar aquilo
+  int y0 = 155;  // traço acima do retangulo pq era um saco pintar aquilo
   int c = 70;
 
   float t = radians(anguloServo);
@@ -641,22 +640,27 @@ void atualizaServo() {
     tela.drawLine(x0, y0, xServoAntigo, yServoAntigo, TFT_BLACK);
   }
 
-  tela.drawRect(60, 130, 100, 90, TFT_WHITE);
-  tela.fillRect(60, 130, 100, 90, TFT_BLUE);
-  tela.drawLine(x0, y0, xNovo, yNovo, TFT_WHITE);
+  
 
-  xServoAntigo = xNovo;
-  yServoAntigo = yNovo;
+  if (xServoAntigo != xNovo) {
 
-  primeiraLinhaServo = false;
+    tela.drawRect(60, 130, 100, 90, TFT_BLUE);
+    tela.fillRect(60, 130, 100, 90, TFT_BLUE);
+    tela.drawLine(x0, y0, xNovo, yNovo, TFT_WHITE);
 
-  tela.fillRect(30, 230, 190, 30, TFT_BLACK);
+    xServoAntigo = xNovo;
+    yServoAntigo = yNovo;
 
-  tela.setTextColor(TFT_WHITE);
-  tela.setTextSize(2);
-  tela.setCursor(35, 235);
-  tela.print("Angulo: ");
-  tela.print(anguloServo);
+    primeiraLinhaServo = false;
+
+    tela.fillRect(30, 230, 190, 30, TFT_BLACK);
+
+    tela.setTextColor(TFT_WHITE);
+    tela.setTextSize(2);
+    tela.setCursor(35, 235);
+    tela.print("Angulo: ");
+    tela.print(anguloServo);
+  }
 }
 
 void telaCapacitor() {
