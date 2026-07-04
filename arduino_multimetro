@@ -41,6 +41,7 @@ int anguloServo = 90;  // começabdo no 90 la
 int xServoAntigo = 0;
 int yServoAntigo = 0;
 const int pinoAnalogo = A10;
+const float resistorShunt= 100.0;   //resistor de 1ohm
 int pinoDoServo = 44; // mudar dps
 
 bool primeiraLinhaServo = true;
