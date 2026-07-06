@@ -96,7 +96,7 @@ void loop() {
       tempoAnterior = millis();
 
       if (telaAtual == 1) {
-        telaVolts();
+        medirVolts();
         Serial.println(v1);
       }
 
@@ -364,6 +364,14 @@ void desenhaImagemVolts() {
 
   tela.drawLine(145, 130, 195, 130, TFT_WHITE);
   tela.drawLine(145, 95, 145, 165, TFT_WHITE);
+}
+
+void medirVolts() {
+  int valorAnalogico = analogRead(A11);
+  Serial.println(valorAnalogico);
+  float valorMap = map(valorAnalogico, 0, 1023, 0, 500);
+  v1 = valorMap / 100.0;
+  telaVolts();
 }
 
 // ---------------- TELA CORRENTE ----------------
