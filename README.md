@@ -32,4 +32,6 @@ Projeto de Microcontroladores com o objetivo de montar um Multímetro Inteligent
 
 ## Esquemático
 
+<img width="3318" height="2237" alt="MODELO CIRCUITO FINAL_bb22" src="https://github.com/user-attachments/assets/2fad9d85-91fd-49e7-86f5-1115730a1e1d" />
+
 ## Vídeo de demonstração
