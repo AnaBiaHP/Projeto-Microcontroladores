@@ -9,7 +9,7 @@ Projeto de Microcontroladores com o objetivo de montar um Multímetro Inteligent
 - Medição de Corrente (mA)
 - Medição de Resistência (Ohm), com identificação automática da faixa de leitura e desenho do resistor com as cores correspondentes
 - Teste de Diodo
-- Medição de Capacitância (F), por tempo de carga do capacitor
+- Medição de Capacitância (uF), por tempo de carga do capacitor
 - Controle de Servo Motor, com indicador de ângulo na tela
 - Interface gráfica em Python (Tkinter + Matplotlib)
 - Início e finalização da leitura dos gráficos controlados pela própria interface do PC
