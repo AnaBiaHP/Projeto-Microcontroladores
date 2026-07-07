@@ -397,9 +397,9 @@ void medirCorrente(){
   int valorAnalogico = analogRead(pinoAnalogo);
   double valorMap = map(valorAnalogico, 0, 1023, 0, 500);
   double valorFinal=valorMap/100.0;
-//  double correnteA=valorFinal/resistorShunt;
-//  double correntemA=correnteA*1000.0;
-  //v2=correntemA;
+  double correnteA=valorFinal/resistorShunt;
+  double correntemA=correnteA*1000.0;
+  v2=correntemA;
   telaCorrente();
 }
 
