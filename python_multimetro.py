@@ -77,7 +77,7 @@ def atualizar_grafico():
         ax.plot(tempo, eixoy, marker='o', color='red')
         ax.set_title("Gráfico C x t")
         ax.set_xlabel("Tempo (s)")
-        ax.set_ylabel("Capacitância (F)")
+        ax.set_ylabel("Capacitância (uF)")
     elif tipo_grafico == "D x t":
         ax.plot(tempo, eixoy, marker='o', color='blue')
         ax.set_title("Gráfico D x t")
