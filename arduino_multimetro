@@ -8,7 +8,7 @@ MCUFRIEND_kbv tela;
 
 #define TOTAL_FUNCIONALIDADES 6
 String lista[TOTAL_FUNCIONALIDADES] = { "VOLTS", "CORRENTE", "RESISTENCIA", "DIODO", "SERVO", "CAPACITOR" };
-int pinosCAPRES[4] = {51, 49, 47, 45}; // resitor/capacitor
+int pinosCAPRES[4] = {43, 45, 47, 49}; // resitor/capacitor
 int pinosDI[4] = {39, 37, 35, 33};// DIODO
 float valoresRes[4] = { 1.0, 100.0, 10000.0, 100000.0 };
 
@@ -192,7 +192,7 @@ void mexeEncoder() {
   }
   if (telaAtual == 5) {
 
-    anguloServo = anguloServo + sentido * 5;
+    anguloServo = anguloServo + sentido * 10;
 
     if (anguloServo > 180) {
       anguloServo = 180;
@@ -314,6 +314,7 @@ void abreTela() {
   if (opcao == 4) {
     telaAtual = 5;
     telaServo();
+    Serial.println("Comando Servo x t");
   }
 
   if (opcao == 5) {
@@ -368,7 +369,6 @@ void desenhaImagemVolts() {
 
 void medirVolts() {
   int valorAnalogico = analogRead(A11);
-  Serial.println(valorAnalogico);
   float valorMap = map(valorAnalogico, 0, 1023, 0, 500);
   v1 = valorMap / 100.0;
   telaVolts();
@@ -455,13 +455,13 @@ void medirResistor() {
 
       v3 = Resis;
 
-      Serial.print("R1= ");
-      Serial.print(valoresRes[i]);
-      Serial.print(" ohm  leitura= ");
-      Serial.print(leitura);
-      Serial.print("  Resis= ");
+      //Serial.print("R1= ");
+      //Serial.print(valoresRes[i]);
+      //Serial.print(" ohm  leitura= ");
+      //Serial.print(leitura);
+      //Serial.print("  Resis= ");
       Serial.print(Resis);
-      Serial.println(" ohm");
+      //Serial.println(" ohm");
 
       telaResistencia();
 
@@ -607,11 +607,11 @@ void medirDiodo() {
 
       v4 = tensaoDiodo;
 
-      Serial.print("Resistor base: ");
-      Serial.print(valoresRes[i]);
-      Serial.print(" ohm | leitura ADC: ");
-      Serial.print(leitura);
-      Serial.print(" | Vdiodo: ");
+      //Serial.print("Resistor base: ");
+      //Serial.print(valoresRes[i]);
+      //Serial.print(" ohm | leitura ADC: ");
+      //Serial.print(leitura);
+      //Serial.print(" | Vdiodo: ");
       Serial.println(tensaoDiodo);
 
       telaDiodo();
@@ -743,27 +743,27 @@ void medirCapacitor() {
 
       
 
-      float microFarads = (((float)tempoDecorrido) / valoresRes[i]);
+      float microFarads = (((float)tempoDecorrido*1000.0) / valoresRes[i]);
       float nanoFarads = microFarads * 1000.0;
 
       v6 = microFarads;
 
-      Serial.print("Escala usada: ");
-      Serial.print(valoresRes[i]);
-      Serial.println(" ohms");
+      //Serial.print("Escala usada: ");
+      //Serial.print(valoresRes[i]);
+      //Serial.println(" ohms");
 
-      Serial.print("Tempo de carga: ");
-      Serial.print(tempoDecorrido);
-      Serial.println(" ms");
+      //Serial.print("Tempo de carga: ");
+      //Serial.print(tempoDecorrido);
+      //Serial.println(" ms");
 
-      Serial.print("Capacitancia: ");
+      //Serial.print("Capacitancia: ");
 
       if (microFarads >= 1.0) {
-        Serial.print(microFarads);
-        Serial.println(" uF");
+        Serial.println(microFarads);
+        //Serial.println(" uF");
       } else {
-        Serial.print(nanoFarads);
-        Serial.println(" nF");
+        //Serial.print(nanoFarads * 1000);
+        //Serial.println(" nF");
       }
 
       telaCapacitor();
