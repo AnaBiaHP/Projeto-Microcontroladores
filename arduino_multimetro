@@ -41,7 +41,7 @@ int anguloServo = 90;  // começabdo no 90 la
 int xServoAntigo = 0;
 int yServoAntigo = 0;
 const int pinoAnalogo = A10;
-const float resistorShunt= 100.0;   //resistor de 1ohm
+const float resistorShunt= 1000.0;   //resistor de 1ohm
 int pinoDoServo = 44; // mudar dps
 
 bool primeiraLinhaServo = true;
@@ -395,11 +395,22 @@ void telaCorrente() {
 
 void medirCorrente(){
   int valorAnalogico = analogRead(pinoAnalogo);
-  double valorMap = map(valorAnalogico, 0, 1023, 0, 500);
-  double valorFinal=valorMap/100.0;
-  double correnteA=valorFinal/resistorShunt;
-  double correntemA=correnteA*1000.0;
-  v2=correntemA;
+  //Serial.print("LIDO: ");
+ // Serial.println(valorAnalogico);
+  float tensao = valorAnalogico * 5.0 / 1023.0;
+  float corrente = tensao * 1000 / resistorShunt;
+  //Serial.print("TENSAO: ");
+  //Serial.println(tensao);
+  //Serial.print("CORRENTE: ");
+  Serial.println(corrente);
+  //double valorMap = map(valorAnalogico, 0, 1023, 0, 500);
+  //Serial.println(valorMap);
+  //double valorFinal=valorMap/100.0;
+  //double correnteA=valorFinal/resistorShunt;
+  //double correntemA=correnteA*1000.0;
+  //v2=correntemA;
+  v2 = corrente;
+  
   telaCorrente();
 }
 
@@ -460,7 +471,7 @@ void medirResistor() {
       //Serial.print(" ohm  leitura= ");
       //Serial.print(leitura);
       //Serial.print("  Resis= ");
-      Serial.print(Resis);
+      Serial.println(Resis);
       //Serial.println(" ohm");
 
       telaResistencia();
