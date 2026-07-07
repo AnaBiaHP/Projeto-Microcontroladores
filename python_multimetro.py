@@ -82,8 +82,8 @@ def atualizar_grafico():
         ax.plot(tempo, eixoy, marker='o', color='blue')
         ax.set_title("Gráfico D x t")
         ax.set_xlabel("Tempo (s)")
-        ax.set_ylabel("Diodo ()")
-    #ax.set_ylim(iniy, fimy)  # aplica o intervalo do eixo Y
+        ax.set_ylabel("Diodo")
+    ax.set_ylim(iniy, fimy)  # aplica o intervalo do eixo Y
     canvas.draw()
     
 def ler_serial():
@@ -114,7 +114,7 @@ def finalizar_leitura():
     global lendo
     lendo=False
     eixoy.clear() #Apaga os dados armazenados na lista tensoes
-    tempo.clear() #Apaga os dados armazenados na lista correntes
+    tempo.clear() 
     ax.clear() #Apaga tudo o que foi desenhado no objeto Axes (linhas, título, legendas, eixos ...) -matplotlib
     canvas.draw() #Redesenha a figura na janela do Tkinter para mostrar as alterações feitas em ax.
     print("Fim da leitura")
