@@ -3,7 +3,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg #renderiza a figura do matplotlib dentro de um widget tkinter
 from serial import Serial
 
-meu_serial=Serial("COM14", baudrate=9600, timeout=0.01)
+meu_serial=Serial("COM6", baudrate=9600, timeout=0.01)
 
 eixoy = []
 tempo=[]
@@ -41,7 +41,7 @@ etiqueta_intervalo = tk.Label(janela, text="Fim:")
 etiqueta_intervalo.place(x=20, y=70)
 
 intervalof= tk.IntVar()  # essa variável vai guardar o texto digitado pelo usuário
-campo_intervalo = tk.Spinbox(janela, width=6, textvariable=intervalof, from_=0, to=15)
+campo_intervalo = tk.Spinbox(janela, width=6, textvariable=intervalof, from_=0, to=150)
 campo_intervalo.place(x=22, y=90)
 
 #captura os dados inseridos pelo usuário
@@ -83,6 +83,11 @@ def atualizar_grafico():
         ax.set_title("Gráfico D x t")
         ax.set_xlabel("Tempo (s)")
         ax.set_ylabel("Diodo")
+    elif tipo_grafico == "Servo x t":
+        ax.plot(tempo, eixoy, marker='o', color='black')
+        ax.set_title("Gráfico Servo x t")
+        ax.set_xlabel("Tempo (s)")
+        ax.set_ylabel("Graus")
     ax.set_ylim(iniy, fimy)  # aplica o intervalo do eixo Y
     canvas.draw()
     
@@ -96,6 +101,7 @@ def ler_serial():
         if texto_recebido.startswith("Comando"):
             tipo_grafico = texto_recebido[8: ]
         else:
+            print(texto_recebido)
             eixoy.append(float(texto_recebido))
             tempo.append(len(tempo)*1) #vai acrecentando os valores na lista
             atualizar_grafico() #a cada vez que um novo valor for lido ele é colocado no gráfico
